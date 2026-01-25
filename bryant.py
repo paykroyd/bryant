@@ -151,8 +151,11 @@ class CarrierInfinityClient:
         return 'OAuth ' + ','.join(header_parts)
 
     def _request(self, method: str, path: str, data: Optional[str] = None,
-                 headers: Optional[dict] = None) -> requests.Response:
-        """Make an authenticated request to the API."""
+                 headers: Optional[dict] = None, _retry: bool = True) -> requests.Response:
+        """Make an authenticated request to the API.
+
+        Automatically retries with re-authentication on 401/403 errors.
+        """
         url = API_BASE_URL + path
 
         # Parse body params for signature if present
@@ -175,6 +178,13 @@ class CarrierInfinityClient:
         else:
             req_headers['Content-Type'] = 'application/x-www-form-urlencoded'
             resp = self.session.post(url, data=data, headers=req_headers)
+
+        # Handle auth failures by re-authenticating and retrying once
+        # API returns 401 with "<error>...<message>signature doesn't match</message>..." when token expires
+        if resp.status_code == 401 and _retry:
+            print('Auth token expired, re-authenticating...')
+            if self.login():
+                return self._request(method, path, data, headers, _retry=False)
 
         return resp
 
