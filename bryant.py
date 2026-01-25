@@ -47,6 +47,15 @@ def load_config():
     return config
 
 
+def resolve_zone(config, zone_arg: str) -> str:
+    """Resolve zone alias to zone ID. Returns the input if no alias found."""
+    if config.has_section('zones'):
+        for alias, zone_id in config.items('zones'):
+            if alias.lower() == zone_arg.lower():
+                return zone_id
+    return zone_arg
+
+
 @dataclass
 class Zone:
     id: str
@@ -643,7 +652,8 @@ def main():
         if args.heat is None and args.cool is None:
             print('Please specify --heat and/or --cool setpoint')
             return 1
-        client.set_temperature(serial, args.zone, args.heat, args.cool, args.hold_until)
+        zone_id = resolve_zone(config, args.zone)
+        client.set_temperature(serial, zone_id, args.heat, args.cool, args.hold_until)
 
     elif args.command == 'set-mode':
         if args.mode is None:
