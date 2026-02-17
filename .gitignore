@@ -3,3 +3,8 @@ hvact_status.csv
 __pycache__
 .idea
 hvac_status.csv
+
+.venv
+build
+dist
+
